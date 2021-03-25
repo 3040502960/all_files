@@ -1,0 +1,54 @@
+---
+ - name: Install Vault
+   hosts: test
+   become: yes
+  
+   vars:
+     source_folder: /home/ura/project/anton/vault1
+     destin_folder: /tmp
+     service_folder: /lib/systemd/system
+     etc_folder: /etc/vault
+  
+   tasks:
+    - name: groupadd vault
+      group: name=vault state=present
+  
+    - name: useradd vault
+      user: name=vault group=vault shell=/bin/false
+
+    - name: create directory etc
+      file: path=/etc/vault 
+          owner=vault 
+          group=vault 
+          state=directory
+
+    - name: create directory lib data
+      file: path=/var/lib/vault/data 
+          owner=vault 
+          group=vault
+          state=directory 
+ 
+    - name: Copy script for download and unzip vault
+      copy: src={{ source_folder }}/{{ item }} dest={{ destin_folder }} owner=root mode=0755
+      loop:
+         - vault_rep.sh
+
+    - name: Copy file service
+      copy: src={{ source_folder }}/{{ item }} dest={{ service_folder }}
+      loop: 
+        - vault.service
+
+    - name: Copy config etc
+      copy: src={{ source_folder }}/{{ item }} dest={{ etc_folder }}
+      loop:
+        - config.hcl
+
+    - name: Run script
+      command: /tmp/./vault_rep.sh
+
+    - name: Start service vaultd
+      service:
+        name: vault 
+        state: started
+
+    
